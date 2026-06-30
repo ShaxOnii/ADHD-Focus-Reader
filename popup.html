@@ -17,7 +17,7 @@
         
         <div class="setting-group">
             <label class="switch-container">
-                <span class="label-text" id="lblEnable">Włącz wtyczkę</span>
+                <span class="label-text" id="lblEnable">Włącz Bionic Reading</span>
                 <label class="switch">
                     <input type="checkbox" id="enableExtension">
                     <span class="slider round"></span>
@@ -25,27 +25,80 @@
             </label>
         </div>
 
-        <div class="setting-group">
+        <div class="setting-group" id="bionicOptions">
             <h3 id="lblBoldMode">Tryb pogrubiania</h3>
             <div class="radio-group">
                 <label><input type="radio" name="boldMode" value="start" checked> <span id="lblModeStart">Początek słowa</span></label>
                 <label><input type="radio" name="boldMode" value="end"> <span id="lblModeEnd">Koniec słowa</span></label>
-                <label><input type="radio" name="boldMode" value="both"> <span id="lblModeBoth">Oba (początek i koniec)</span></label>
+                <label><input type="radio" name="boldMode" value="both"> <span id="lblModeBoth">Oba</span></label>
+            </div>
+            <div class="volume-container" style="margin-top: 10px;">
+                <label for="fontSlider" id="lblFontSize">Wielkość czcionki: <span id="lblFontValue">100%</span></label>
+                <input type="range" id="fontSlider" min="100" max="200" step="10" value="100">
             </div>
         </div>
         
+        <!-- NEW V2.0 FEATURES -->
+        
         <div class="setting-group">
-            <h3 id="lblFontSize">Wielkość czcionki</h3>
-            <div class="volume-container">
-                <label for="fontSlider"><span id="lblFontValue">100%</span></label>
-                <input type="range" id="fontSlider" min="100" max="200" step="10" value="100">
+            <h3 id="lblPomodoroTitle">Pomodoro Timer</h3>
+            <div class="pomodoro-container">
+                <div class="pomodoro-display" id="pomodoroTime">25:00</div>
+                <div class="pomodoro-controls">
+                    <button id="btnPomoStart" class="btn">Start</button>
+                    <button id="btnPomoStop" class="btn">Stop</button>
+                    <button id="btnPomoReset" class="btn">Reset</button>
+                </div>
             </div>
         </div>
 
         <div class="setting-group">
-            <h3 id="lblMusicTitle">Muzyka w tle (Focus & Chill)</h3>
+            <h3 id="lblFocusTools">Narzędzia Skupienia</h3>
+            
             <label class="switch-container">
-                <span class="label-text" id="lblMusicEnable">Włącz inteligentną muzykę</span>
+                <span class="label-text" id="lblRuler">Linijka Skupienia</span>
+                <label class="switch">
+                    <input type="checkbox" id="enableRuler">
+                    <span class="slider round"></span>
+                </label>
+            </label>
+            
+            <label class="switch-container">
+                <span class="label-text" id="lblProgressBar">Pasek postępu czytania</span>
+                <label class="switch">
+                    <input type="checkbox" id="enableProgressBar">
+                    <span class="slider round"></span>
+                </label>
+            </label>
+        </div>
+
+        <div class="setting-group">
+            <h3 id="lblVisuals">Wygląd i Oczy</h3>
+            
+            <label class="switch-container">
+                <span class="label-text" id="lblDyslexic">Czcionka dla Dyslektyków</span>
+                <label class="switch">
+                    <input type="checkbox" id="enableDyslexic">
+                    <span class="slider round"></span>
+                </label>
+            </label>
+
+            <div style="margin-top: 10px;">
+                <span id="lblTheme">Motyw strony:</span>
+                <select id="themeSelect" class="theme-select">
+                    <option value="default" id="optThemeDefault">Domyślny</option>
+                    <option value="sepia" id="optThemeSepia">Sepia (Ciepły)</option>
+                    <option value="dark" id="optThemeDark">Ciemny (Dark Mode)</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- END NEW FEATURES -->
+
+        <div class="setting-group">
+            <h3 id="lblMusicTitle">Muzyka w tle</h3>
+            <label class="switch-container">
+                <span class="label-text" id="lblMusicEnable">Włącz AI Muzykę</span>
                 <label class="switch">
                     <input type="checkbox" id="enableMusic">
                     <span class="slider round"></span>
@@ -57,7 +110,7 @@
                 <input type="range" id="volumeSlider" min="0" max="1" step="0.05" value="0.2">
             </div>
             
-            <div id="currentMood" class="status-text"><span id="lblMoodTitle">Wykryty nastrój:</span> <span id="moodValue">Brak (Oczekiwanie na skan)</span></div>
+            <div id="currentMood" class="status-text"><span id="lblMoodTitle">Wykryto:</span> <span id="moodValue">Brak</span></div>
         </div>
     </div>
     <script src="popup.js"></script>

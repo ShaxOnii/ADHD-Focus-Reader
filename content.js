@@ -13,7 +13,11 @@ let currentState = {
     isEnabled: true,
     boldMode: 'start',
     isMusicEnabled: false,
-    fontSize: 100
+    fontSize: 100,
+    isRulerEnabled: false,
+    isProgressEnabled: false,
+    isDyslexicEnabled: false,
+    pageTheme: 'default'
 };
 
 let isProcessed = false;
@@ -22,48 +26,217 @@ let currentDetectedMood = 'Focus';
 // Filtruje tagi, których nie chcemy modyfikować
 const IGNORED_TAGS = ['H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'BUTTON', 'SCRIPT', 'STYLE', 'NAV', 'HEADER', 'FOOTER', 'SVG', 'IMG'];
 
+// ELEMENTY UI WSTRZYKIWANE PRZEZ WTYCZKĘ
+let rulerEl = null;
+let progressEl = null;
+let adhdStyleEl = null; // Do czcionki dyslektycznej i motywów
+
 // Inicjalizacja
-chrome.storage.local.get(['isEnabled', 'boldMode', 'isMusicEnabled', 'fontSize'], (result) => {
+chrome.storage.local.get([
+    'isEnabled', 'boldMode', 'isMusicEnabled', 'fontSize',
+    'isRulerEnabled', 'isProgressEnabled', 'isDyslexicEnabled', 'pageTheme'
+], (result) => {
     currentState.isEnabled = result.isEnabled !== false;
     currentState.boldMode = result.boldMode || 'start';
     currentState.isMusicEnabled = result.isMusicEnabled === true;
     currentState.fontSize = result.fontSize || 100;
-
-    if (currentState.isEnabled) {
-        processDocument();
-    }
-    applyFontSize();
     
-    if (currentState.isMusicEnabled) {
-        detectMoodAndPlayMusic();
-    }
+    currentState.isRulerEnabled = result.isRulerEnabled === true;
+    currentState.isProgressEnabled = result.isProgressEnabled === true;
+    currentState.isDyslexicEnabled = result.isDyslexicEnabled === true;
+    currentState.pageTheme = result.pageTheme || 'default';
+
+    if (currentState.isEnabled) processDocument();
+    applyFontSize();
+    applyThemeAndFont();
+    
+    if (currentState.isRulerEnabled) enableRuler();
+    if (currentState.isProgressEnabled) enableProgressBar();
+    if (currentState.isMusicEnabled) detectMoodAndPlayMusic();
 });
 
 // Nasłuchiwanie zmian z popupu
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    if (request.action === 'toggleExtension') {
-        currentState.isEnabled = request.isEnabled;
-        if (currentState.isEnabled) {
-            processDocument();
-        } else {
-            revertDocument();
-        }
-    } else if (request.action === 'changeBoldMode') {
-        currentState.boldMode = request.boldMode;
-        if (currentState.isEnabled) {
-            revertDocument();
-            processDocument();
-        }
-    } else if (request.action === 'requestScan') {
-        detectMoodAndPlayMusic();
-    } else if (request.action === 'changeFontSize') {
-        currentState.fontSize = request.fontSize;
-        applyFontSize();
+    switch (request.action) {
+        case 'toggleExtension':
+            currentState.isEnabled = request.isEnabled;
+            currentState.isEnabled ? processDocument() : revertDocument();
+            break;
+        case 'changeBoldMode':
+            currentState.boldMode = request.boldMode;
+            if (currentState.isEnabled) { revertDocument(); processDocument(); }
+            break;
+        case 'changeFontSize':
+            currentState.fontSize = request.fontSize;
+            applyFontSize();
+            break;
+        case 'requestScan':
+            detectMoodAndPlayMusic();
+            break;
+        // NOWE FUNKCJE V2
+        case 'toggleRuler':
+            currentState.isRulerEnabled = request.isEnabled;
+            currentState.isRulerEnabled ? enableRuler() : disableRuler();
+            break;
+        case 'toggleProgress':
+            currentState.isProgressEnabled = request.isEnabled;
+            currentState.isProgressEnabled ? enableProgressBar() : disableProgressBar();
+            break;
+        case 'toggleDyslexic':
+            currentState.isDyslexicEnabled = request.isEnabled;
+            applyThemeAndFont();
+            break;
+        case 'changeTheme':
+            currentState.pageTheme = request.theme;
+            applyThemeAndFont();
+            break;
     }
 });
 
-// === LOGIKA POGRUBIANIA (BIONIC READING) ===
+// === 1. LINIJKA SKUPIENIA (RULER) ===
+function onMouseMoveRuler(e) {
+    if (!rulerEl) return;
+    const y = e.clientY; // Pozycja kursora w viewport
+    // Wysokość szpary to np. 100px.
+    // Box-shadow służy jako "kurtyna" w górę i w dół.
+    rulerEl.style.top = (y - 50) + 'px';
+}
 
+function enableRuler() {
+    if (!rulerEl) {
+        rulerEl = document.createElement('div');
+        rulerEl.id = 'adhd-ruler';
+        Object.assign(rulerEl.style, {
+            position: 'fixed',
+            left: '0',
+            right: '0',
+            height: '100px', // Szerokość "okienka"
+            pointerEvents: 'none', // Kliknięcia przechodzą przez linijkę
+            zIndex: '999998',
+            boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.5)' // Cieniowanie wszystkiego dookoła
+        });
+        document.body.appendChild(rulerEl);
+        document.addEventListener('mousemove', onMouseMoveRuler);
+    }
+}
+
+function disableRuler() {
+    if (rulerEl) {
+        document.removeEventListener('mousemove', onMouseMoveRuler);
+        rulerEl.remove();
+        rulerEl = null;
+    }
+}
+
+// === 2. PASEK POSTĘPU ===
+function onScrollProgress() {
+    if (!progressEl) return;
+    const scrollTop = window.scrollY || document.documentElement.scrollTop;
+    const docHeight = document.documentElement.scrollHeight;
+    const winHeight = document.documentElement.clientHeight;
+    
+    const scrollPercent = (scrollTop / (docHeight - winHeight)) * 100;
+    progressEl.style.width = scrollPercent + '%';
+}
+
+function enableProgressBar() {
+    if (!progressEl) {
+        progressEl = document.createElement('div');
+        progressEl.id = 'adhd-progress-bar';
+        Object.assign(progressEl.style, {
+            position: 'fixed',
+            top: '0',
+            left: '0',
+            height: '5px',
+            width: '0%',
+            backgroundColor: '#bd93f9', // Przyjemny fioletowy
+            zIndex: '999999',
+            transition: 'width 0.1s ease-out'
+        });
+        document.body.appendChild(progressEl);
+        window.addEventListener('scroll', onScrollProgress);
+        onScrollProgress(); // inicjalizacja
+    }
+}
+
+function disableProgressBar() {
+    if (progressEl) {
+        window.removeEventListener('scroll', onScrollProgress);
+        progressEl.remove();
+        progressEl = null;
+    }
+}
+
+// === 3. MOTYW STRONY I CZCIONKA DYSLEKTYCZNA ===
+function applyThemeAndFont() {
+    if (!adhdStyleEl) {
+        adhdStyleEl = document.createElement('style');
+        adhdStyleEl.id = 'adhd-theme-style';
+        document.head.appendChild(adhdStyleEl);
+    }
+
+    let css = '';
+
+    // Czcionka Dyslektyczna
+    if (currentState.isDyslexicEnabled) {
+        css += `
+            * {
+                font-family: "Comic Sans MS", "Comic Sans", "OpenDyslexic", sans-serif !important;
+                letter-spacing: 0.5px !important;
+            }
+        `;
+    }
+
+    // Motyw
+    if (currentState.pageTheme === 'sepia') {
+        css += `
+            html, body {
+                background-color: #f4ecd8 !important;
+                color: #5b4636 !important;
+            }
+            p, span, div, h1, h2, h3, h4, h5, h6, a, li, td {
+                background-color: transparent !important;
+                color: inherit !important;
+            }
+        `;
+    } else if (currentState.pageTheme === 'dark') {
+        css += `
+            html, body {
+                background-color: #1e1e1e !important;
+                color: #e0e0e0 !important;
+            }
+            p, span, div, h1, h2, h3, h4, h5, h6, a, li, td {
+                background-color: transparent !important;
+                color: inherit !important;
+            }
+        `;
+    }
+
+    adhdStyleEl.textContent = css;
+}
+
+// === 4. LOGIKA WIELKOŚCI CZCIONKI ===
+function applyFontSize() {
+    let styleEl = document.getElementById('adhd-font-style');
+    if (!styleEl) {
+        styleEl = document.createElement('style');
+        styleEl.id = 'adhd-font-style';
+        document.head.appendChild(styleEl);
+    }
+    
+    if (currentState.fontSize === 100) {
+        styleEl.textContent = '';
+    } else {
+        styleEl.textContent = `
+            .adhd-bionic-wrapper {
+                font-size: ${currentState.fontSize}% !important;
+                line-height: normal !important;
+            }
+        `;
+    }
+}
+
+// === LOGIKA POGRUBIANIA (BIONIC READING) ===
 function processNode(node) {
     if (node.nodeType === Node.TEXT_NODE) {
         const text = node.nodeValue;
@@ -129,49 +302,17 @@ function revertDocument() {
     isProcessed = false;
 }
 
-// === LOGIKA WIELKOŚCI CZCIONKI ===
-
-function applyFontSize() {
-    let styleEl = document.getElementById('adhd-font-style');
-    if (!styleEl) {
-        styleEl = document.createElement('style');
-        styleEl.id = 'adhd-font-style';
-        document.head.appendChild(styleEl);
-    }
-    
-    if (currentState.fontSize === 100) {
-        styleEl.textContent = '';
-    } else {
-        styleEl.textContent = `
-            .adhd-bionic-wrapper {
-                font-size: ${currentState.fontSize}% !important;
-                line-height: normal !important;
-            }
-        `;
-    }
-    
-    // Usuń stare powiększenie z body (jeśli było nałożone)
-    document.body.style.zoom = "";
-    document.body.style.transform = "";
-}
-
 // === LOGIKA DETEKCJI NASTROJU (AI) ===
-
 function detectMoodAndPlayMusic() {
     const textContent = document.body.innerText.toLowerCase();
     
-    let scores = {
-        'Fantasy': 0,
-        'Science': 0
-    };
+    let scores = { 'Fantasy': 0, 'Science': 0, 'Tech': 0, 'Nature': 0, 'Crime': 0, 'History': 0, 'Lifestyle': 0 };
 
     for (const [mood, words] of Object.entries(moodDictionaries)) {
         words.forEach(word => {
             const regex = new RegExp(`\\b${word}\\b`, 'g');
             const matches = textContent.match(regex);
-            if (matches) {
-                scores[mood] += matches.length;
-            }
+            if (matches) scores[mood] += matches.length;
         });
     }
 

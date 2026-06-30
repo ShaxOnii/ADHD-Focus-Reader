@@ -1,70 +1,83 @@
-let creating; // Obietnica dla uniknięcia równoległego tworzenia wielu dokumentów offscreen
-const OFFSCREEN_DOCUMENT_PATH = 'offscreen.html';
+let offscreenDocumentUrl = 'offscreen.html';
 
-async function setupOffscreenDocument(path) {
-    // Sprawdź czy dokument już istnieje
+async function setupOffscreenDocument() {
     const existingContexts = await chrome.runtime.getContexts({
-        contextTypes: ['OFFSCREEN_DOCUMENT']
+        contextTypes: ['OFFSCREEN_DOCUMENT'],
+        documentUrls: [offscreenDocumentUrl]
+    });
+
+    if (existingContexts.length > 0) return;
+
+    await chrome.offscreen.createDocument({
+        url: offscreenDocumentUrl,
+        reasons: ['AUDIO_PLAYBACK'],
+        justification: 'Odtwarzanie muzyki w tle ułatwiającej czytanie'
+    });
+}
+
+async function closeOffscreenDocument() {
+    const existingContexts = await chrome.runtime.getContexts({
+        contextTypes: ['OFFSCREEN_DOCUMENT'],
+        documentUrls: [offscreenDocumentUrl]
     });
 
     if (existingContexts.length > 0) {
-        return;
-    }
-
-    // Twórz dokument jeśli nie istnieje
-    if (creating) {
-        await creating;
-    } else {
-        creating = chrome.offscreen.createDocument({
-            url: path,
-            reasons: ['AUDIO_PLAYBACK'],
-            justification: 'Odtwarzanie muzyki w tle dopasowanej do kontekstu tekstu'
-        });
-        await creating;
-        creating = null;
+        await chrome.offscreen.closeDocument();
     }
 }
 
-// Nasłuchiwanie komunikatów z content.js i popup.js
-chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
-    if (message.action === 'playMusic') {
-        const { mood } = message;
-        // Zapisz nastrój do local storage, aby popup mógł to odczytać
-        chrome.storage.local.set({ lastDetectedMood: mood });
-        
-        // Poinformuj popup (jeśli jest otwarty) o nowym nastroju
-        chrome.runtime.sendMessage({ action: 'moodDetected', mood: mood }).catch(() => {});
-
-        // Najpierw upewnij się, że offscreen dokument istnieje
-        await setupOffscreenDocument(OFFSCREEN_DOCUMENT_PATH);
-        
-        // Sprawdź czy muzyka jest w ogóle włączona w ustawieniach
-        chrome.storage.local.get(['isMusicEnabled', 'volume'], (result) => {
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (request.action === 'playMusic') {
+        chrome.storage.local.get(['isMusicEnabled', 'volume'], async (result) => {
             if (result.isMusicEnabled) {
+                chrome.storage.local.set({ lastDetectedMood: request.mood });
+                await setupOffscreenDocument();
                 chrome.runtime.sendMessage({
                     action: 'offscreenPlayMusic',
-                    mood: mood,
+                    mood: request.mood,
                     volume: result.volume !== undefined ? result.volume : 0.2
-                }).catch(() => {});
+                });
+                
+                // Prześlij info do popupu jeśli jest otwarty
+                chrome.runtime.sendMessage({ action: 'moodDetected', mood: request.mood });
             }
         });
-    } else if (message.action === 'toggleMusic') {
-        await setupOffscreenDocument(OFFSCREEN_DOCUMENT_PATH);
-        if (message.isMusicEnabled) {
-             // Wysłanie zapytania do aktywnej karty by przysłała mood
-             chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-                 if(tabs[0]) {
-                     chrome.tabs.sendMessage(tabs[0].id, {action: "requestScan"}).catch(() => {});
-                 }
-             });
-        } else {
-            chrome.runtime.sendMessage({ action: 'offscreenStopMusic' }).catch(() => {});
+    } else if (request.action === 'toggleMusic') {
+        if (!request.isMusicEnabled) {
+            chrome.runtime.sendMessage({ action: 'offscreenStopMusic' });
+            // Możemy też całkowicie zamknąć offscreen:
+            // closeOffscreenDocument();
         }
-    } else if (message.action === 'changeVolume') {
-        await setupOffscreenDocument(OFFSCREEN_DOCUMENT_PATH);
-        chrome.runtime.sendMessage({ 
-            action: 'offscreenSetVolume', 
-            volume: message.volume 
-        }).catch(() => {});
+    } else if (request.action === 'changeVolume') {
+        chrome.runtime.sendMessage({ action: 'offscreenSetVolume', volume: request.volume });
+    } else if (request.action === 'startPomodoroAlarm') {
+        // Oblicz pozostały czas w minutach, by stworzyć alarm
+        const now = Date.now();
+        const diffMs = request.endTime - now;
+        if (diffMs > 0) {
+            const delayInMinutes = diffMs / 60000;
+            chrome.alarms.create('pomodoroDone', { delayInMinutes });
+        }
+    } else if (request.action === 'stopPomodoroAlarm') {
+        chrome.alarms.clear('pomodoroDone');
+    }
+});
+
+// Nasłuchuj końca timera Pomodoro
+chrome.alarms.onAlarm.addListener((alarm) => {
+    if (alarm.name === 'pomodoroDone') {
+        chrome.storage.local.set({ isPomodoroRunning: false });
+        
+        // Wyślij powiadomienie
+        chrome.notifications.create('pomodoroNotify', {
+            type: 'basic',
+            iconUrl: 'icon.png', // Wymagane, nawet jeśli go nie mamy, system użyje domyślnej
+            title: 'Czas minął! (Pomodoro)',
+            message: 'Wykonano 25 minut pełnego skupienia. Zrób sobie teraz 5 minutową przerwę.',
+            priority: 2
+        });
+        
+        // Opcjonalnie powiadom popup, by zaktualizował UI (jeśli akurat jest otwarty)
+        chrome.runtime.sendMessage({ action: 'pomodoroFinished' });
     }
 });

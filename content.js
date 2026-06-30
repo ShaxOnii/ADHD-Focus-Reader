@@ -1,30 +1,34 @@
 // === SŁOWNIKI NASTROJÓW ===
 const moodDictionaries = {
-    'Fantasy': ['smok', 'magia', 'miecz', 'królestwo', 'rycerz', 'czarodziej', 'elf', 'krasnolud', 'zaklęcie', 'potwór', 'zamek'],
-    'Nauka': ['badania', 'nauka', 'dane', 'analiza', 'eksperyment', 'teoria', 'kwant', 'kosmos', 'biologia', 'fizyka', 'metoda', 'wyniki']
+    'Fantasy': ['smok', 'magia', 'miecz', 'królestwo', 'rycerz', 'czarodziej', 'elf', 'krasnolud', 'zaklęcie', 'potwór', 'zamek', 'dragon', 'magic', 'sword'],
+    'Science': ['badania', 'nauka', 'dane', 'analiza', 'eksperyment', 'teoria', 'kwant', 'kosmos', 'biologia', 'fizyka', 'metoda', 'wyniki', 'research', 'science']
 };
 
 let currentState = {
     isEnabled: true,
     boldMode: 'start',
-    isMusicEnabled: false
+    isMusicEnabled: false,
+    fontSize: 100
 };
 
 let isProcessed = false;
-let currentDetectedMood = 'Skupienie (Domyślny)';
+let currentDetectedMood = 'Focus';
 
 // Filtruje tagi, których nie chcemy modyfikować
 const IGNORED_TAGS = ['H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'A', 'BUTTON', 'SCRIPT', 'STYLE', 'NAV', 'HEADER', 'FOOTER', 'SVG', 'IMG'];
 
 // Inicjalizacja
-chrome.storage.local.get(['isEnabled', 'boldMode', 'isMusicEnabled'], (result) => {
+chrome.storage.local.get(['isEnabled', 'boldMode', 'isMusicEnabled', 'fontSize'], (result) => {
     currentState.isEnabled = result.isEnabled !== false;
     currentState.boldMode = result.boldMode || 'start';
     currentState.isMusicEnabled = result.isMusicEnabled === true;
+    currentState.fontSize = result.fontSize || 100;
 
     if (currentState.isEnabled) {
         processDocument();
     }
+    applyFontSize();
+    
     if (currentState.isMusicEnabled) {
         detectMoodAndPlayMusic();
     }
@@ -47,6 +51,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         }
     } else if (request.action === 'requestScan') {
         detectMoodAndPlayMusic();
+    } else if (request.action === 'changeFontSize') {
+        currentState.fontSize = request.fontSize;
+        applyFontSize();
     }
 });
 
@@ -55,10 +62,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 function processNode(node) {
     if (node.nodeType === Node.TEXT_NODE) {
         const text = node.nodeValue;
-        // Szukaj słów (pomijając białe znaki)
         if (text.trim().length === 0) return;
 
-        const words = text.split(/(\s+)/); // Dzieli zachowując spacje
+        const words = text.split(/(\s+)/);
         const fragment = document.createDocumentFragment();
 
         words.forEach(word => {
@@ -80,19 +86,13 @@ function processNode(node) {
         node.parentNode.replaceChild(wrapper, node);
     } else if (node.nodeType === Node.ELEMENT_NODE) {
         if (IGNORED_TAGS.includes(node.tagName) || node.classList.contains('adhd-bionic-wrapper')) {
-            return; // Omijamy nagłówki, linki itp.
+            return;
         }
-        // Klonujemy childNodes, bo będziemy je modyfikować w pętli
         Array.from(node.childNodes).forEach(processNode);
     }
 }
 
 function applyBionicBold(word, mode) {
-    const lettersToBold = Math.ceil(word.length / 2) || 1; // Mniej więcej połowa słowa (lub mądrzejsza logika)
-    
-    // Uproszczona logika dla testów:
-    // Słowa krótkie (1-3) - 1 litera
-    // Średnie (4-6) - 2-3 litery
     const boldCount = word.length <= 3 ? 1 : Math.ceil(word.length * 0.4);
 
     if (mode === 'start') {
@@ -110,22 +110,37 @@ function applyBionicBold(word, mode) {
 function processDocument() {
     if (isProcessed) return;
     isProcessed = true;
-    
-    // Zastosuj do całego body
     Array.from(document.body.childNodes).forEach(processNode);
 }
 
 function revertDocument() {
     if (!isProcessed) return;
-    
     const wrappers = document.querySelectorAll('.adhd-bionic-wrapper');
     wrappers.forEach(wrapper => {
         const originalText = wrapper.getAttribute('data-original-text');
         const textNode = document.createTextNode(originalText);
         wrapper.parentNode.replaceChild(textNode, wrapper);
     });
-    
     isProcessed = false;
+}
+
+// === LOGIKA WIELKOŚCI CZCIONKI ===
+
+function applyFontSize() {
+    // Powiększa tylko bazowy rozmiar na body używając CSS zmiennej lub filtru
+    // Najbezpieczniejszym sposobem bez niszczenia układu jest użycie zoom lub modyfikacji HTML font-size
+    if (currentState.fontSize === 100) {
+        document.body.style.zoom = "1";
+        // fallback for Firefox
+        document.body.style.transform = "scale(1)";
+        document.body.style.transformOrigin = "top left";
+    } else {
+        const scale = currentState.fontSize / 100;
+        document.body.style.zoom = scale;
+        // fallback for Firefox
+        document.body.style.transform = `scale(${scale})`;
+        document.body.style.transformOrigin = "top left";
+    }
 }
 
 // === LOGIKA DETEKCJI NASTROJU (AI) ===
@@ -135,13 +150,11 @@ function detectMoodAndPlayMusic() {
     
     let scores = {
         'Fantasy': 0,
-        'Nauka': 0
+        'Science': 0
     };
 
-    // Zlicz wystąpienia słów kluczowych
     for (const [mood, words] of Object.entries(moodDictionaries)) {
         words.forEach(word => {
-            // Proste szukanie z regexem (całe słowa)
             const regex = new RegExp(`\\b${word}\\b`, 'g');
             const matches = textContent.match(regex);
             if (matches) {
@@ -150,11 +163,10 @@ function detectMoodAndPlayMusic() {
         });
     }
 
-    let detectedMood = 'Skupienie (Domyślny)';
+    let detectedMood = 'Focus';
     let maxScore = 0;
 
     for (const [mood, score] of Object.entries(scores)) {
-        // Dodaj próg minimum 2 wystąpień, aby uniknąć przypadków
         if (score > maxScore && score >= 2) {
             maxScore = score;
             detectedMood = mood;
@@ -164,7 +176,6 @@ function detectMoodAndPlayMusic() {
     currentDetectedMood = detectedMood;
     console.log(`[ADHD Focus Reader] Wykryto nastrój: ${detectedMood} (Wynik: ${maxScore})`);
 
-    // Wyślij polecenie do background.js by odtworzył muzykę
     chrome.runtime.sendMessage({
         action: 'playMusic',
         mood: detectedMood

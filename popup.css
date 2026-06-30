@@ -22,11 +22,38 @@ body {
 
 h1 {
     font-size: 1.2rem;
-    margin: 0 0 10px 0;
-    text-align: center;
+    margin: 0;
     color: var(--primary);
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     border-bottom: 1px solid #444;
     padding-bottom: 10px;
+}
+
+.lang-toggle {
+    display: flex;
+    gap: 5px;
+}
+
+.lang-btn {
+    background: transparent;
+    border: 1px solid #555;
+    color: #888;
+    padding: 3px 6px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: bold;
+}
+
+.lang-btn.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
 }
 
 h3 {

@@ -7,11 +7,17 @@
 </head>
 <body>
     <div class="container">
-        <h1>ADHD Focus Reader</h1>
+        <div class="header">
+            <h1>ADHD Focus Reader</h1>
+            <div class="lang-toggle">
+                <button id="langPl" class="lang-btn active">PL</button>
+                <button id="langEn" class="lang-btn">EN</button>
+            </div>
+        </div>
         
         <div class="setting-group">
             <label class="switch-container">
-                <span class="label-text">Włącz wtyczkę</span>
+                <span class="label-text" id="lblEnable">Włącz wtyczkę</span>
                 <label class="switch">
                     <input type="checkbox" id="enableExtension">
                     <span class="slider round"></span>
@@ -20,18 +26,26 @@
         </div>
 
         <div class="setting-group">
-            <h3>Tryb pogrubiania</h3>
+            <h3 id="lblBoldMode">Tryb pogrubiania</h3>
             <div class="radio-group">
-                <label><input type="radio" name="boldMode" value="start" checked> Początek słowa</label>
-                <label><input type="radio" name="boldMode" value="end"> Koniec słowa</label>
-                <label><input type="radio" name="boldMode" value="both"> Oba (początek i koniec)</label>
+                <label><input type="radio" name="boldMode" value="start" checked> <span id="lblModeStart">Początek słowa</span></label>
+                <label><input type="radio" name="boldMode" value="end"> <span id="lblModeEnd">Koniec słowa</span></label>
+                <label><input type="radio" name="boldMode" value="both"> <span id="lblModeBoth">Oba (początek i koniec)</span></label>
+            </div>
+        </div>
+        
+        <div class="setting-group">
+            <h3 id="lblFontSize">Wielkość czcionki</h3>
+            <div class="volume-container">
+                <label for="fontSlider"><span id="lblFontValue">100%</span></label>
+                <input type="range" id="fontSlider" min="100" max="200" step="10" value="100">
             </div>
         </div>
 
         <div class="setting-group">
-            <h3>Muzyka w tle (Focus & Chill)</h3>
+            <h3 id="lblMusicTitle">Muzyka w tle (Focus & Chill)</h3>
             <label class="switch-container">
-                <span class="label-text">Włącz inteligentną muzykę</span>
+                <span class="label-text" id="lblMusicEnable">Włącz inteligentną muzykę</span>
                 <label class="switch">
                     <input type="checkbox" id="enableMusic">
                     <span class="slider round"></span>
@@ -39,11 +53,11 @@
             </label>
             
             <div class="volume-container">
-                <label for="volumeSlider">Głośność:</label>
+                <label for="volumeSlider" id="lblVolume">Głośność:</label>
                 <input type="range" id="volumeSlider" min="0" max="1" step="0.05" value="0.2">
             </div>
             
-            <div id="currentMood" class="status-text">Wykryty nastrój: <span>Brak (Oczekiwanie na skan)</span></div>
+            <div id="currentMood" class="status-text"><span id="lblMoodTitle">Wykryty nastrój:</span> <span id="moodValue">Brak (Oczekiwanie na skan)</span></div>
         </div>
     </div>
     <script src="popup.js"></script>

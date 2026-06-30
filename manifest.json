@@ -21,7 +21,8 @@
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "ADHD Focus Reader"
+    "default_title": "ADHD Focus Reader",
+    "default_icon": "icon.png"
   },
   "content_scripts": [
     {

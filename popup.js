@@ -14,7 +14,12 @@ const i18n = {
         moodDefault: 'Brak (Oczekiwanie na skan)',
         moodFocus: 'Skupienie (Domyślny)',
         moodFantasy: 'Fantasy',
-        moodScience: 'Nauka'
+        moodScience: 'Nauka',
+        moodTech: 'Technologia',
+        moodNature: 'Natura',
+        moodCrime: 'Kryminał',
+        moodHistory: 'Historia',
+        moodLifestyle: 'Lifestyle'
     },
     'en': {
         lblEnable: 'Enable Extension',
@@ -30,7 +35,12 @@ const i18n = {
         moodDefault: 'None (Waiting for scan)',
         moodFocus: 'Focus (Default)',
         moodFantasy: 'Fantasy',
-        moodScience: 'Science'
+        moodScience: 'Science',
+        moodTech: 'Technology',
+        moodNature: 'Nature',
+        moodCrime: 'Crime / Thriller',
+        moodHistory: 'History',
+        moodLifestyle: 'Lifestyle'
     }
 };
 

@@ -1,7 +1,12 @@
 // === SŁOWNIKI NASTROJÓW ===
 const moodDictionaries = {
     'Fantasy': ['smok', 'magia', 'miecz', 'królestwo', 'rycerz', 'czarodziej', 'elf', 'krasnolud', 'zaklęcie', 'potwór', 'zamek', 'dragon', 'magic', 'sword'],
-    'Science': ['badania', 'nauka', 'dane', 'analiza', 'eksperyment', 'teoria', 'kwant', 'kosmos', 'biologia', 'fizyka', 'metoda', 'wyniki', 'research', 'science']
+    'Science': ['badania', 'nauka', 'dane', 'analiza', 'eksperyment', 'teoria', 'kwant', 'kosmos', 'biologia', 'fizyka', 'metoda', 'wyniki', 'research', 'science'],
+    'Tech': ['komputer', 'procesor', 'sztuczna inteligencja', 'serwer', 'sprzęt', 'kod', 'haker', 'programowanie', 'tech', 'software', 'hardware', 'cyber'],
+    'Nature': ['las', 'góry', 'ocean', 'podróż', 'przyroda', 'zwierzęta', 'turystyka', 'klimat', 'drzewa', 'nature', 'travel', 'animals', 'earth'],
+    'Crime': ['morderstwo', 'policja', 'detektyw', 'śledztwo', 'zbrodnia', 'tajemnica', 'podejrzany', 'krew', 'zabójca', 'crime', 'murder', 'detective', 'mystery'],
+    'History': ['wojna', 'król', 'imperium', 'starożytność', 'bitwa', 'armia', 'rewolucja', 'cesarz', 'history', 'war', 'empire', 'ancient', 'king', 'battle'],
+    'Lifestyle': ['przepis', 'kuchnia', 'zdrowie', 'relaks', 'trening', 'motywacja', 'codzienność', 'poranek', 'lifestyle', 'health', 'fitness', 'recipe', 'relax', 'morning']
 };
 
 let currentState = {

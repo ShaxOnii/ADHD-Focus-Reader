@@ -71,7 +71,7 @@ chrome.alarms.onAlarm.addListener((alarm) => {
         // Wyślij powiadomienie
         chrome.notifications.create('pomodoroNotify', {
             type: 'basic',
-            iconUrl: 'icon_v2.png', // Zaktualizowana nazwa po AI
+            iconUrl: 'icon_128.png', // Zaktualizowana nazwa po AI
             title: 'Czas minął! (Pomodoro)',
             message: 'Wykonano 25 minut pełnego skupienia. Zrób sobie teraz 5 minutową przerwę.',
             priority: 2

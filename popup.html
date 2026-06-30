@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>ADHD Focus Reader</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <div class="container">
+        <h1>ADHD Focus Reader</h1>
+        
+        <div class="setting-group">
+            <label class="switch-container">
+                <span class="label-text">Włącz wtyczkę</span>
+                <label class="switch">
+                    <input type="checkbox" id="enableExtension">
+                    <span class="slider round"></span>
+                </label>
+            </label>
+        </div>
+
+        <div class="setting-group">
+            <h3>Tryb pogrubiania</h3>
+            <div class="radio-group">
+                <label><input type="radio" name="boldMode" value="start" checked> Początek słowa</label>
+                <label><input type="radio" name="boldMode" value="end"> Koniec słowa</label>
+                <label><input type="radio" name="boldMode" value="both"> Oba (początek i koniec)</label>
+            </div>
+        </div>
+
+        <div class="setting-group">
+            <h3>Muzyka w tle (Focus & Chill)</h3>
+            <label class="switch-container">
+                <span class="label-text">Włącz inteligentną muzykę</span>
+                <label class="switch">
+                    <input type="checkbox" id="enableMusic">
+                    <span class="slider round"></span>
+                </label>
+            </label>
+            
+            <div class="volume-container">
+                <label for="volumeSlider">Głośność:</label>
+                <input type="range" id="volumeSlider" min="0" max="1" step="0.05" value="0.2">
+            </div>
+            
+            <div id="currentMood" class="status-text">Wykryty nastrój: <span>Brak (Oczekiwanie na skan)</span></div>
+        </div>
+    </div>
+    <script src="popup.js"></script>
+</body>
+</html>

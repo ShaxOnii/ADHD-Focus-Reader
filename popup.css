@@ -1,0 +1,132 @@
+:root {
+    --primary: #6366f1;
+    --bg-color: #1e1e2f;
+    --text-color: #f8f8f2;
+    --card-bg: #282a36;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    margin: 0;
+    padding: 15px;
+    width: 320px;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+h1 {
+    font-size: 1.2rem;
+    margin: 0 0 10px 0;
+    text-align: center;
+    color: var(--primary);
+    border-bottom: 1px solid #444;
+    padding-bottom: 10px;
+}
+
+h3 {
+    font-size: 0.9rem;
+    margin: 0 0 10px 0;
+    color: #bd93f9;
+}
+
+.setting-group {
+    background-color: var(--card-bg);
+    padding: 12px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.switch-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+}
+
+.label-text {
+    font-weight: 500;
+}
+
+/* Toggle Switch Styles */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 20px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #555;
+    transition: .4s;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 14px;
+    width: 14px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .4s;
+}
+
+input:checked + .slider {
+    background-color: var(--primary);
+}
+
+input:checked + .slider:before {
+    transform: translateX(20px);
+}
+
+.slider.round {
+    border-radius: 20px;
+}
+
+.slider.round:before {
+    border-radius: 50%;
+}
+
+.radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 0.85rem;
+}
+
+.volume-container {
+    margin-top: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    font-size: 0.85rem;
+}
+
+input[type="range"] {
+    width: 100%;
+}
+
+.status-text {
+    margin-top: 10px;
+    font-size: 0.8rem;
+    color: #8be9fd;
+    font-style: italic;
+}

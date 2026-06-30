@@ -15,7 +15,7 @@ let isProcessed = false;
 let currentDetectedMood = 'Focus';
 
 // Filtruje tagi, których nie chcemy modyfikować
-const IGNORED_TAGS = ['H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'A', 'BUTTON', 'SCRIPT', 'STYLE', 'NAV', 'HEADER', 'FOOTER', 'SVG', 'IMG'];
+const IGNORED_TAGS = ['H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'BUTTON', 'SCRIPT', 'STYLE', 'NAV', 'HEADER', 'FOOTER', 'SVG', 'IMG'];
 
 // Inicjalizacja
 chrome.storage.local.get(['isEnabled', 'boldMode', 'isMusicEnabled', 'fontSize'], (result) => {

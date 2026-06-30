@@ -23,18 +23,18 @@ let currentState = {
 let isProcessed = false;
 let currentDetectedMood = 'Focus';
 
-// Filtruje tagi, których nie chcemy modyfikować
 const IGNORED_TAGS = ['H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'BUTTON', 'SCRIPT', 'STYLE', 'NAV', 'HEADER', 'FOOTER', 'SVG', 'IMG'];
 
 // ELEMENTY UI WSTRZYKIWANE PRZEZ WTYCZKĘ
 let rulerEl = null;
 let progressEl = null;
-let adhdStyleEl = null; // Do czcionki dyslektycznej i motywów
+let adhdStyleEl = null;
 
 // Inicjalizacja
 chrome.storage.local.get([
     'isEnabled', 'boldMode', 'isMusicEnabled', 'fontSize',
-    'isRulerEnabled', 'isProgressEnabled', 'isDyslexicEnabled', 'pageTheme'
+    'isRulerEnabled', 'isProgressEnabled', 'isDyslexicEnabled', 'pageTheme',
+    'isPomodoroRunning', 'pomodoroEndTime'
 ], (result) => {
     currentState.isEnabled = result.isEnabled !== false;
     currentState.boldMode = result.boldMode || 'start';
@@ -53,9 +53,13 @@ chrome.storage.local.get([
     if (currentState.isRulerEnabled) enableRuler();
     if (currentState.isProgressEnabled) enableProgressBar();
     if (currentState.isMusicEnabled) detectMoodAndPlayMusic();
+    
+    // Uruchomienie pływającego widżetu jeśli był włączony
+    if (result.isPomodoroRunning && result.pomodoroEndTime > Date.now()) {
+        showPomodoroWidget(result.pomodoroEndTime);
+    }
 });
 
-// Nasłuchiwanie zmian z popupu
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     switch (request.action) {
         case 'toggleExtension':
@@ -73,7 +77,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         case 'requestScan':
             detectMoodAndPlayMusic();
             break;
-        // NOWE FUNKCJE V2
         case 'toggleRuler':
             currentState.isRulerEnabled = request.isEnabled;
             currentState.isRulerEnabled ? enableRuler() : disableRuler();
@@ -90,15 +93,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             currentState.pageTheme = request.theme;
             applyThemeAndFont();
             break;
+        // POMODORO V2
+        case 'showPomodoroWidget':
+            showPomodoroWidget(request.endTime);
+            break;
+        case 'hidePomodoroWidget':
+            hidePomodoroWidget();
+            break;
     }
 });
 
 // === 1. LINIJKA SKUPIENIA (RULER) ===
 function onMouseMoveRuler(e) {
     if (!rulerEl) return;
-    const y = e.clientY; // Pozycja kursora w viewport
-    // Wysokość szpary to np. 100px.
-    // Box-shadow służy jako "kurtyna" w górę i w dół.
+    const y = e.clientY;
     rulerEl.style.top = (y - 50) + 'px';
 }
 
@@ -110,10 +118,10 @@ function enableRuler() {
             position: 'fixed',
             left: '0',
             right: '0',
-            height: '100px', // Szerokość "okienka"
-            pointerEvents: 'none', // Kliknięcia przechodzą przez linijkę
+            height: '100px',
+            pointerEvents: 'none',
             zIndex: '999998',
-            boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.5)' // Cieniowanie wszystkiego dookoła
+            boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.5)'
         });
         document.body.appendChild(rulerEl);
         document.addEventListener('mousemove', onMouseMoveRuler);
@@ -128,31 +136,78 @@ function disableRuler() {
     }
 }
 
-// === 2. PASEK POSTĘPU ===
+// === 2. PASEK POSTĘPU (PIGUŁKA V2.1) ===
+let progressFillEl = null;
+let progressTextEl = null;
+
 function onScrollProgress() {
-    if (!progressEl) return;
+    if (!progressEl || !progressFillEl || !progressTextEl) return;
     const scrollTop = window.scrollY || document.documentElement.scrollTop;
     const docHeight = document.documentElement.scrollHeight;
     const winHeight = document.documentElement.clientHeight;
     
-    const scrollPercent = (scrollTop / (docHeight - winHeight)) * 100;
-    progressEl.style.width = scrollPercent + '%';
+    let scrollPercent = 0;
+    if (docHeight > winHeight) {
+        scrollPercent = Math.min(100, Math.max(0, (scrollTop / (docHeight - winHeight)) * 100));
+    }
+    
+    progressFillEl.style.width = scrollPercent + '%';
+    progressTextEl.textContent = Math.round(scrollPercent) + '%';
 }
 
 function enableProgressBar() {
     if (!progressEl) {
+        // Kontener pigułki
         progressEl = document.createElement('div');
-        progressEl.id = 'adhd-progress-bar';
+        progressEl.id = 'adhd-progress-bar-container';
         Object.assign(progressEl.style, {
             position: 'fixed',
+            top: '15px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: '300px',
+            height: '30px',
+            border: '2px solid #282a36',
+            borderRadius: '15px',
+            backgroundColor: '#f8f8f2',
+            zIndex: '999999',
+            overflow: 'hidden',
+            boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+        });
+        
+        // Wypełnienie
+        progressFillEl = document.createElement('div');
+        Object.assign(progressFillEl.style, {
+            position: 'absolute',
             top: '0',
             left: '0',
-            height: '5px',
+            height: '100%',
             width: '0%',
-            backgroundColor: '#bd93f9', // Przyjemny fioletowy
-            zIndex: '999999',
-            transition: 'width 0.1s ease-out'
+            backgroundColor: '#bd93f9',
+            transition: 'width 0.1s ease-out',
+            zIndex: '1'
         });
+        
+        // Tekst (procenty)
+        progressTextEl = document.createElement('div');
+        Object.assign(progressTextEl.style, {
+            position: 'absolute',
+            top: '0',
+            left: '0',
+            width: '100%',
+            height: '100%',
+            lineHeight: '26px',
+            textAlign: 'center',
+            color: '#282a36',
+            fontWeight: 'bold',
+            fontFamily: 'sans-serif',
+            fontSize: '14px',
+            zIndex: '2',
+            pointerEvents: 'none'
+        });
+        
+        progressEl.appendChild(progressFillEl);
+        progressEl.appendChild(progressTextEl);
         document.body.appendChild(progressEl);
         window.addEventListener('scroll', onScrollProgress);
         onScrollProgress(); // inicjalizacja
@@ -164,8 +219,99 @@ function disableProgressBar() {
         window.removeEventListener('scroll', onScrollProgress);
         progressEl.remove();
         progressEl = null;
+        progressFillEl = null;
+        progressTextEl = null;
     }
 }
+
+// === WIDŻET POMODORO (PŁYWAJĄCY ZEGAR) ===
+let pomodoroWidgetEl = null;
+let pomodoroInterval = null;
+
+function showPomodoroWidget(endTime) {
+    if (!pomodoroWidgetEl) {
+        pomodoroWidgetEl = document.createElement('div');
+        pomodoroWidgetEl.id = 'adhd-pomodoro-widget';
+        Object.assign(pomodoroWidgetEl.style, {
+            position: 'fixed',
+            top: '20px',
+            right: '20px',
+            backgroundColor: '#282a36',
+            color: '#f8f8f2',
+            padding: '10px 15px',
+            borderRadius: '10px',
+            boxShadow: '0 4px 10px rgba(0,0,0,0.3)',
+            zIndex: '999999',
+            fontFamily: 'monospace',
+            fontSize: '24px',
+            fontWeight: 'bold',
+            border: '2px solid #bd93f9',
+            cursor: 'move',
+            userSelect: 'none'
+        });
+        document.body.appendChild(pomodoroWidgetEl);
+        makeDraggable(pomodoroWidgetEl);
+    }
+
+    clearInterval(pomodoroInterval);
+    pomodoroInterval = setInterval(() => {
+        const remaining = endTime - Date.now();
+        if (remaining <= 0) {
+            clearInterval(pomodoroInterval);
+            if (pomodoroWidgetEl) pomodoroWidgetEl.textContent = "00:00";
+        } else {
+            if (pomodoroWidgetEl) pomodoroWidgetEl.textContent = formatTimeMs(remaining);
+        }
+    }, 1000);
+    pomodoroWidgetEl.textContent = formatTimeMs(endTime - Date.now());
+}
+
+function hidePomodoroWidget() {
+    if (pomodoroWidgetEl) {
+        pomodoroWidgetEl.remove();
+        pomodoroWidgetEl = null;
+    }
+    clearInterval(pomodoroInterval);
+}
+
+function formatTimeMs(ms) {
+    if (ms < 0) ms = 0;
+    const totalSeconds = Math.floor(ms / 1000);
+    const m = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
+    const s = (totalSeconds % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+}
+
+// Funkcja Draggable
+function makeDraggable(elmnt) {
+    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    elmnt.onmousedown = dragMouseDown;
+
+    function dragMouseDown(e) {
+        e.preventDefault();
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        document.onmouseup = closeDragElement;
+        document.onmousemove = elementDrag;
+    }
+
+    function elementDrag(e) {
+        e.preventDefault();
+        pos1 = pos3 - e.clientX;
+        pos2 = pos4 - e.clientY;
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
+        elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+        elmnt.style.right = 'auto'; 
+    }
+
+    function closeDragElement() {
+        document.onmouseup = null;
+        document.onmousemove = null;
+    }
+}
+
 
 // === 3. MOTYW STRONY I CZCIONKA DYSLEKTYCZNA ===
 function applyThemeAndFont() {
@@ -177,7 +323,6 @@ function applyThemeAndFont() {
 
     let css = '';
 
-    // Czcionka Dyslektyczna
     if (currentState.isDyslexicEnabled) {
         css += `
             * {
@@ -187,7 +332,6 @@ function applyThemeAndFont() {
         `;
     }
 
-    // Motyw
     if (currentState.pageTheme === 'sepia') {
         css += `
             html, body {

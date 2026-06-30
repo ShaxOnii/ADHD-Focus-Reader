@@ -54,7 +54,7 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
              // Wysłanie zapytania do aktywnej karty by przysłała mood
              chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
                  if(tabs[0]) {
-                     chrome.tabs.sendMessage(tabs[0].id, {action: "requestScan"});
+                     chrome.tabs.sendMessage(tabs[0].id, {action: "requestScan"}).catch(() => {});
                  }
              });
         } else {

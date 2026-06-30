@@ -139,6 +139,7 @@ function disableRuler() {
 // === 2. PASEK POSTĘPU (PIGUŁKA V2.1) ===
 let progressFillEl = null;
 let progressTextEl = null;
+let rewardTriggered = false;
 
 function onScrollProgress() {
     if (!progressEl || !progressFillEl || !progressTextEl) return;
@@ -152,7 +153,27 @@ function onScrollProgress() {
     }
     
     progressFillEl.style.width = scrollPercent + '%';
-    progressTextEl.textContent = Math.round(scrollPercent) + '%';
+    
+    if (scrollPercent === 100) {
+        progressTextEl.textContent = '100% Gratulacje! 🎉';
+        if (!rewardTriggered) {
+            rewardTriggered = true;
+            progressFillEl.style.backgroundColor = '#f1fa8c'; // Złoty
+            progressEl.style.boxShadow = '0 0 15px #f1fa8c';
+            progressEl.style.border = '2px solid #f1fa8c';
+            progressEl.style.transform = 'translateX(-50%) scale(1.05)';
+            progressEl.style.transition = 'all 0.3s ease';
+        }
+    } else {
+        progressTextEl.textContent = Math.round(scrollPercent) + '%';
+        if (rewardTriggered) {
+            rewardTriggered = false;
+            progressFillEl.style.backgroundColor = '#bd93f9';
+            progressEl.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
+            progressEl.style.border = '2px solid #282a36';
+            progressEl.style.transform = 'translateX(-50%) scale(1)';
+        }
+    }
 }
 
 function enableProgressBar() {

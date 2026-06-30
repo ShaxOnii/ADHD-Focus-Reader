@@ -157,3 +157,60 @@ input[type="range"] {
     color: #8be9fd;
     font-style: italic;
 }
+
+/* --- V2 NEW STYLES --- */
+
+.pomodoro-settings {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: #191a21;
+    border-radius: 8px;
+    padding: 10px;
+}
+
+.pomodoro-controls {
+    display: flex;
+    gap: 10px;
+    margin-top: 5px;
+}
+
+.btn {
+    flex: 1;
+    background-color: #44475a;
+    color: white;
+    border: 1px solid #6272a4;
+    padding: 6px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: background 0.2s, transform 0.1s;
+    text-align: center;
+}
+
+.btn:hover {
+    background-color: var(--primary);
+}
+
+.btn:active {
+    transform: scale(0.95);
+}
+
+input[type="number"] {
+    background: #44475a;
+    color: white;
+    border: 1px solid #6272a4;
+    border-radius: 4px;
+    padding: 4px;
+    font-family: inherit;
+}
+
+.theme-select {
+    background: #44475a;
+    color: white;
+    border: 1px solid #6272a4;
+    border-radius: 4px;
+    padding: 5px;
+    width: 100%;
+    margin-top: 5px;
+}

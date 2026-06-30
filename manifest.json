@@ -3,6 +3,11 @@
   "name": "ADHD Focus Reader",
   "version": "1.0",
   "description": "Ułatwia czytanie poprzez pogrubianie liter słów i dobiera muzykę w tle na podstawie kontekstu strony.",
+  "icons": {
+    "16": "icon.png",
+    "48": "icon.png",
+    "128": "icon.png"
+  },
   "permissions": [
     "activeTab",
     "storage",

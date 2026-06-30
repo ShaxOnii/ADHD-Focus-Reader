@@ -127,20 +127,27 @@ function revertDocument() {
 // === LOGIKA WIELKOŚCI CZCIONKI ===
 
 function applyFontSize() {
-    // Powiększa tylko bazowy rozmiar na body używając CSS zmiennej lub filtru
-    // Najbezpieczniejszym sposobem bez niszczenia układu jest użycie zoom lub modyfikacji HTML font-size
-    if (currentState.fontSize === 100) {
-        document.body.style.zoom = "1";
-        // fallback for Firefox
-        document.body.style.transform = "scale(1)";
-        document.body.style.transformOrigin = "top left";
-    } else {
-        const scale = currentState.fontSize / 100;
-        document.body.style.zoom = scale;
-        // fallback for Firefox
-        document.body.style.transform = `scale(${scale})`;
-        document.body.style.transformOrigin = "top left";
+    let styleEl = document.getElementById('adhd-font-style');
+    if (!styleEl) {
+        styleEl = document.createElement('style');
+        styleEl.id = 'adhd-font-style';
+        document.head.appendChild(styleEl);
     }
+    
+    if (currentState.fontSize === 100) {
+        styleEl.textContent = '';
+    } else {
+        styleEl.textContent = `
+            .adhd-bionic-wrapper {
+                font-size: ${currentState.fontSize}% !important;
+                line-height: normal !important;
+            }
+        `;
+    }
+    
+    // Usuń stare powiększenie z body (jeśli było nałożone)
+    document.body.style.zoom = "";
+    document.body.style.transform = "";
 }
 
 // === LOGIKA DETEKCJI NASTROJU (AI) ===
